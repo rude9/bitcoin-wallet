@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,18 +12,22 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.util;
 
-import java.lang.reflect.Field;
-import java.util.UUID;
-
-import javax.annotation.Nullable;
-
 import android.bluetooth.BluetoothAdapter;
-import android.os.Build;
+import androidx.annotation.Nullable;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
+import java.util.UUID;
 
 /**
  * @author Andreas Schildbach
@@ -42,14 +46,7 @@ public class Bluetooth {
     /** Android 6 uses this MAC address instead of the real one. */
     private static final String MARSHMELLOW_FAKE_MAC = "02:00:00:00:00:00";
 
-    public static boolean canListen(final BluetoothAdapter adapter) {
-        if (adapter == null)
-            return false;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2)
-            // Earlier versions cannot reliably listen.
-            return false;
-        return true;
-    }
+    private static final Logger log = LoggerFactory.getLogger(Bluetooth.class);
 
     public static @Nullable String getAddress(final BluetoothAdapter adapter) {
         if (adapter == null)
@@ -67,22 +64,42 @@ public class Bluetooth {
             if (mService == null)
                 return null;
             return (String) mService.getClass().getMethod("getAddress").invoke(mService);
+        } catch (final InvocationTargetException x) {
+            log.info("Problem determining Bluetooth MAC via reflection", x);
+            return null;
         } catch (final Exception x) {
             throw new RuntimeException(x);
         }
     }
 
-    public static String compressMac(final String mac) {
-        return mac.replaceAll(":", "");
+    public static String compressMac(final String decompressedMac) throws IllegalArgumentException {
+        final StringBuilder compressedMac = new StringBuilder();
+        for (final CharSequence segment : Splitter.on(':').split(decompressedMac)) {
+            if (segment.length() > 2)
+                throw new IllegalArgumentException("Oversized segment in: " + decompressedMac);
+            for (int i = 0; i < segment.length(); i++) {
+                final char c = segment.charAt(i);
+                if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F'))
+                    throw new IllegalArgumentException("Illegal character '" + c + "' in: " + decompressedMac);
+            }
+            compressedMac.append(Strings.padStart(segment.toString(), 2, '0').toUpperCase(Locale.US));
+        }
+        return compressedMac.toString();
     }
 
-    public static String decompressMac(final String compressedMac) {
-        final StringBuilder mac = new StringBuilder();
-        for (int i = 0; i < compressedMac.length(); i += 2)
-            mac.append(compressedMac.substring(i, i + 2)).append(':');
-        mac.setLength(mac.length() - 1);
-
-        return mac.toString();
+    public static String decompressMac(final String compressedMac) throws IllegalArgumentException {
+        if (compressedMac.length() % 2 != 0)
+            throw new IllegalArgumentException("Impossible length: " + compressedMac);
+        final StringBuilder decompressedMac = new StringBuilder();
+        for (int i = 0; i < compressedMac.length(); i++) {
+            final char c = compressedMac.charAt(i);
+            if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F'))
+                throw new IllegalArgumentException("Illegal character '" + c + "' in: " + compressedMac);
+            if (i % 2 == 0 && decompressedMac.length() > 0)
+                decompressedMac.append(':');
+            decompressedMac.append(Character.toUpperCase(c));
+        }
+        return decompressedMac.toString();
     }
 
     public static boolean isBluetoothUrl(final String url) {

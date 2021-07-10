@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,41 +12,37 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui;
+
+import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.net.Uri;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import androidx.annotation.Nullable;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
+import de.schildbach.wallet.Constants;
+import de.schildbach.wallet.R;
+import de.schildbach.wallet.util.CrashReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Charsets;
-
-import de.schildbach.wallet.Constants;
-import de.schildbach.wallet.util.CrashReporter;
-import de.schildbach.wallet_test.R;
-
-import android.app.Activity;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
-import android.net.Uri;
-import android.support.v4.app.ShareCompat;
-import android.support.v4.content.FileProvider;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
 
 /**
  * @author Andreas Schildbach
@@ -56,7 +52,6 @@ public abstract class ReportIssueDialogBuilder extends DialogBuilder implements 
 
     private EditText viewDescription;
     private CheckBox viewCollectDeviceInfo;
-    private CheckBox viewCollectInstalledPackages;
     private CheckBox viewCollectApplicationLog;
     private CheckBox viewCollectWalletDump;
 
@@ -72,13 +67,11 @@ public abstract class ReportIssueDialogBuilder extends DialogBuilder implements 
 
         ((TextView) view.findViewById(R.id.report_issue_dialog_message)).setText(messageResId);
 
-        viewDescription = (EditText) view.findViewById(R.id.report_issue_dialog_description);
+        viewDescription = view.findViewById(R.id.report_issue_dialog_description);
 
-        viewCollectDeviceInfo = (CheckBox) view.findViewById(R.id.report_issue_dialog_collect_device_info);
-        viewCollectInstalledPackages = (CheckBox) view
-                .findViewById(R.id.report_issue_dialog_collect_installed_packages);
-        viewCollectApplicationLog = (CheckBox) view.findViewById(R.id.report_issue_dialog_collect_application_log);
-        viewCollectWalletDump = (CheckBox) view.findViewById(R.id.report_issue_dialog_collect_wallet_dump);
+        viewCollectDeviceInfo = view.findViewById(R.id.report_issue_dialog_collect_device_info);
+        viewCollectApplicationLog = view.findViewById(R.id.report_issue_dialog_collect_application_log);
+        viewCollectWalletDump = view.findViewById(R.id.report_issue_dialog_collect_wallet_dump);
 
         setTitle(titleResId);
         setView(view);
@@ -89,7 +82,7 @@ public abstract class ReportIssueDialogBuilder extends DialogBuilder implements 
     @Override
     public void onClick(final DialogInterface dialog, final int which) {
         final StringBuilder text = new StringBuilder();
-        final List<Uri> attachments = new ArrayList<Uri>();
+        final List<Uri> attachments = new ArrayList<>();
         final File cacheDir = activity.getCacheDir();
         final File reportDir = new File(cacheDir, "report");
         reportDir.mkdir();
@@ -140,15 +133,6 @@ public abstract class ReportIssueDialogBuilder extends DialogBuilder implements 
             }
         }
 
-        if (viewCollectInstalledPackages.isChecked()) {
-            try {
-                text.append("\n\n\n=== installed packages ===\n\n");
-                CrashReporter.appendInstalledPackages(text, activity);
-            } catch (final IOException x) {
-                text.append(x.toString()).append('\n');
-            }
-        }
-
         if (viewCollectApplicationLog.isChecked()) {
             final File logDir = new File(activity.getFilesDir(), "log");
             if (logDir.exists())
@@ -165,7 +149,7 @@ public abstract class ReportIssueDialogBuilder extends DialogBuilder implements 
                 if (walletDump != null) {
                     final File file = File.createTempFile("wallet-dump.", ".txt", reportDir);
 
-                    final Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
+                    final Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
                     writer.write(walletDump.toString());
                     writer.close();
 

@@ -7,11 +7,12 @@
 • Visning af Bitcoin-beløb i BTC, mBTC og µBTC.
 • Konvertering til og fra lokale valutaer.
 • Afsendelse og modtagelse af Bitcoin via NFC, QR-koder eller Bitcoin-URLer.
-• Adressebog til ofte brugte Bitcoin-adresser.
 • Når du er offline, kan du stadig betale via Bluetooth.
 • Systemnotifikation for modtagne mønter.
 • Rydning af papirtegnebøger (fx de der bruges til kold opbevaring).
 • App-widget for Bitcoin-saldo.
+• Sikkerhed: Understøtter SegWit og det nye bech32-format.
+• Beskyttelse af privatliv: Understøtter Tor via den separate Orbot-app.
 
 
 <b>BIDRAG</b>
@@ -24,12 +25,6 @@ https://github.com/bitcoin-wallet/bitcoin-wallet
 
 Alle oversættelser håndteres via Transifex:
 https://www.transifex.com/bitcoin-wallet/bitcoin-wallet/
-
-
-<b>ANBEFALINGER</b>
-
-• Mange mobile tegnebøger baserer deres kode på Bitcoin Wallet. Eksempler: blockchain.info og BTCX.
-• Anbefalet af BitPay.
 
 
 <i>Brug for egen risiko!</i>

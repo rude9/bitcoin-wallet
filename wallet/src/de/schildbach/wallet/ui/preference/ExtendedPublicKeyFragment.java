@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,30 +12,26 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui.preference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import de.schildbach.wallet.ui.DialogBuilder;
-import de.schildbach.wallet.util.Qr;
-import de.schildbach.wallet_test.R;
 
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-import android.support.v4.app.ShareCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import androidx.core.app.ShareCompat;
+import de.schildbach.wallet.R;
+import de.schildbach.wallet.ui.DialogBuilder;
+import de.schildbach.wallet.util.Qr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Andreas Schildbach
@@ -43,19 +39,19 @@ import android.widget.ImageView;
 public class ExtendedPublicKeyFragment extends DialogFragment {
     private static final String FRAGMENT_TAG = ExtendedPublicKeyFragment.class.getName();
 
-    private static final String KEY_XPUB = "xpub";
+    private static final String KEY_EXTENDED_PUBLIC_KEY = "extended_public_key";
 
     private static final Logger log = LoggerFactory.getLogger(ExtendedPublicKeyFragment.class);
 
-    public static void show(final FragmentManager fm, final CharSequence xpub) {
-        instance(xpub).show(fm, FRAGMENT_TAG);
+    public static void show(final FragmentManager fm, final CharSequence base58) {
+        instance(base58).show(fm, FRAGMENT_TAG);
     }
 
-    private static ExtendedPublicKeyFragment instance(final CharSequence xpub) {
+    private static ExtendedPublicKeyFragment instance(final CharSequence base58) {
         final ExtendedPublicKeyFragment fragment = new ExtendedPublicKeyFragment();
 
         final Bundle args = new Bundle();
-        args.putCharSequence(KEY_XPUB, xpub);
+        args.putCharSequence(KEY_EXTENDED_PUBLIC_KEY, base58);
         fragment.setArguments(args);
 
         return fragment;
@@ -72,29 +68,25 @@ public class ExtendedPublicKeyFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(final Bundle savedInstanceState) {
-        final String xpub = getArguments().getCharSequence(KEY_XPUB).toString();
+        final String base58 = getArguments().getCharSequence(KEY_EXTENDED_PUBLIC_KEY).toString();
 
         final View view = LayoutInflater.from(activity).inflate(R.layout.extended_public_key_dialog, null);
 
-        final BitmapDrawable bitmap = new BitmapDrawable(getResources(), Qr.bitmap(xpub));
+        final BitmapDrawable bitmap = new BitmapDrawable(getResources(), Qr.bitmap(base58));
         bitmap.setFilterBitmap(false);
-        final ImageView imageView = (ImageView) view.findViewById(R.id.extended_public_key_dialog_image);
+        final ImageView imageView = view.findViewById(R.id.extended_public_key_dialog_image);
         imageView.setImageDrawable(bitmap);
 
-        final DialogBuilder dialog = new DialogBuilder(activity);
-        dialog.setView(view);
-        dialog.setNegativeButton(R.string.button_dismiss, null);
-        dialog.setPositiveButton(R.string.button_share, new OnClickListener() {
-            @Override
-            public void onClick(final DialogInterface dialog, final int which) {
-                final ShareCompat.IntentBuilder builder = ShareCompat.IntentBuilder.from(activity);
-                builder.setType("text/plain");
-                builder.setText(xpub);
-                builder.setSubject(getString(R.string.extended_public_key_fragment_title));
-                builder.setChooserTitle(R.string.extended_public_key_fragment_share);
-                builder.startChooser();
-                log.info("xpub shared via intent: {}", xpub);
-            }
+        final DialogBuilder dialog = DialogBuilder.custom(activity, 0, view);
+        dialog.setNegativeButton(R.string.button_dismiss, (d, which) -> dismissAllowingStateLoss());
+        dialog.setPositiveButton(R.string.button_share, (d, which) -> {
+            final ShareCompat.IntentBuilder builder = ShareCompat.IntentBuilder.from(activity);
+            builder.setType("text/plain");
+            builder.setText(base58);
+            builder.setSubject(getString(R.string.extended_public_key_fragment_title));
+            builder.setChooserTitle(R.string.extended_public_key_fragment_share);
+            builder.startChooser();
+            log.info("extended public key shared via intent: {}", base58);
         });
 
         return dialog.show();

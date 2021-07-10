@@ -7,11 +7,12 @@
 • Zobrazení Bitcoin částek v BTC, mBTC a µBTC.
 • Přepočet z a do národních měn.
 • Odesílání a přijímání plateb přes NFC, QR kódy nebo Bitcoin URL.
-• Adresář pro často používané Bitcoin adresy.
 • Pokud jste offline, stále můžete platit přes Bluetooth.
 • Systémové notifikace při přijaté platbě
 • Načítání papírových peněženek (např. ty co se používají u cold storage).
 • Widget pro zobrazení Bitcoin bilance.
+• Bezpečnost: Podporuje SegWit a nový formát bech32.
+• Soukromí: Podporuje Tor prostřednictvím samostatné aplikace Orbot.
 
 
 <b>PŘISPĚJTE</b>
@@ -24,12 +25,6 @@ https://github.com/bitcoin-wallet/bitcoin-wallet
 
 Veškeré překlady jsou spravovány přes Transifex:
 https://www.transifex.com/bitcoin-wallet/bitcoin-wallet/
-
-
-<b>UZNÁNÍ</b>
-
-• Mnoho mobilních peněženek využívá zdrojový kód Bitcoin Wallet. Například: blockchain.info a BTCX.
-• Doporučeno službou BitPay.
 
 
 <i>Použití na vlastní riziko!</i>

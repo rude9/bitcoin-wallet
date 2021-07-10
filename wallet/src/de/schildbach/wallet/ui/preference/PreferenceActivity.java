@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,16 +12,15 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui.preference;
 
-import java.util.List;
-
-import de.schildbach.wallet_test.R;
-
 import android.view.MenuItem;
+import de.schildbach.wallet.R;
+
+import java.util.List;
 
 /**
  * @author Andreas Schildbach
@@ -34,12 +33,10 @@ public final class PreferenceActivity extends android.preference.PreferenceActiv
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
-        switch (item.getItemId()) {
-        case android.R.id.home:
-            finish();
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 

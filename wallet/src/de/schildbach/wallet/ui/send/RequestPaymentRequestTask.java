@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,39 +12,36 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui.send;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import javax.annotation.Nullable;
-
-import org.bitcoinj.protocols.payments.PaymentProtocol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.CodedOutputStream;
-import com.squareup.okhttp.CacheControl;
-import com.squareup.okhttp.Call;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-
-import de.schildbach.wallet.Constants;
-import de.schildbach.wallet.data.PaymentIntent;
-import de.schildbach.wallet.ui.InputParser;
-import de.schildbach.wallet.util.Bluetooth;
-import de.schildbach.wallet_test.R;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.Looper;
+import androidx.annotation.Nullable;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.CodedOutputStream;
+import de.schildbach.wallet.Constants;
+import de.schildbach.wallet.R;
+import de.schildbach.wallet.data.PaymentIntent;
+import de.schildbach.wallet.ui.InputParser;
+import de.schildbach.wallet.util.Bluetooth;
+import okhttp3.CacheControl;
+import okhttp3.Call;
+import okhttp3.Headers;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.bitcoinj.protocols.payments.PaymentProtocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * @author Andreas Schildbach
@@ -81,50 +78,49 @@ public abstract class RequestPaymentRequestTask {
 
         @Override
         public void requestPaymentRequest(final String url) {
-            super.backgroundHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    log.info("trying to request payment request from {}", url);
+            super.backgroundHandler.post(() -> {
+                log.info("trying to request payment request from {}", url);
 
-                    final Request.Builder request = new Request.Builder();
-                    request.url(url);
-                    request.cacheControl(new CacheControl.Builder().noCache().build());
-                    request.header("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
-                    if (userAgent != null)
-                        request.header("User-Agent", userAgent);
+                final Request.Builder request = new Request.Builder();
+                request.url(url);
+                request.cacheControl(new CacheControl.Builder().noCache().build());
+                final Headers.Builder headers = new Headers.Builder();
+                headers.add("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
+                if (userAgent != null)
+                    headers.add("User-Agent", userAgent);
+                request.headers(headers.build());
 
-                    final Call call = Constants.HTTP_CLIENT.newCall(request.build());
-                    try {
-                        final Response response = call.execute();
-                        if (response.isSuccessful()) {
-                            final String contentType = response.header("Content-Type");
-                            final InputStream is = response.body().byteStream();
-                            new InputParser.StreamInputParser(contentType, is) {
-                                @Override
-                                protected void handlePaymentIntent(final PaymentIntent paymentIntent) {
-                                    log.info("received {} via http", paymentIntent);
+                final Call call = Constants.HTTP_CLIENT.newCall(request.build());
+                try {
+                    final Response response = call.execute();
+                    if (response.isSuccessful()) {
+                        final String contentType = response.header("Content-Type");
+                        final InputStream is = response.body().byteStream();
+                        new InputParser.StreamInputParser(contentType, is) {
+                            @Override
+                            protected void handlePaymentIntent(final PaymentIntent paymentIntent) {
+                                log.info("received {} via http", paymentIntent);
 
-                                    onPaymentIntent(paymentIntent);
-                                }
+                                onPaymentIntent(paymentIntent);
+                            }
 
-                                @Override
-                                protected void error(final int messageResId, final Object... messageArgs) {
-                                    onFail(messageResId, messageArgs);
-                                }
-                            }.parse();
-                            is.close();
-                        } else {
-                            final int responseCode = response.code();
-                            final String responseMessage = response.message();
+                            @Override
+                            protected void error(final int messageResId, final Object... messageArgs) {
+                                onFail(messageResId, messageArgs);
+                            }
+                        }.parse();
+                        is.close();
+                    } else {
+                        final int responseCode = response.code();
+                        final String responseMessage = response.message();
 
-                            log.info("got http error {}: {}", responseCode, responseMessage);
-                            onFail(R.string.error_http, responseCode, responseMessage);
-                        }
-                    } catch (final IOException x) {
-                        log.info("problem sending", x);
-
-                        onFail(R.string.error_io, x.getMessage());
+                        log.info("got http error {}: {}", responseCode, responseMessage);
+                        onFail(R.string.error_http, responseCode, responseMessage);
                     }
+                } catch (final IOException x) {
+                    log.info("problem sending", x);
+
+                    onFail(R.string.error_io, x.getMessage());
                 }
             });
         }
@@ -142,85 +138,53 @@ public abstract class RequestPaymentRequestTask {
 
         @Override
         public void requestPaymentRequest(final String url) {
-            super.backgroundHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    log.info("trying to request payment request from {}", url);
+            super.backgroundHandler.post(() -> {
+                log.info("trying to request payment request from {}", url);
 
-                    final BluetoothDevice device = bluetoothAdapter
-                            .getRemoteDevice(Bluetooth.decompressMac(Bluetooth.getBluetoothMac(url)));
+                final BluetoothDevice device = bluetoothAdapter
+                        .getRemoteDevice(Bluetooth.decompressMac(Bluetooth.getBluetoothMac(url)));
 
-                    BluetoothSocket socket = null;
-                    OutputStream os = null;
-                    InputStream is = null;
+                try (final BluetoothSocket socket = device
+                        .createInsecureRfcommSocketToServiceRecord(Bluetooth.PAYMENT_REQUESTS_UUID);
+                        final OutputStream os = socket.getOutputStream();
+                        final InputStream is = socket.getInputStream()) {
+                    socket.connect();
 
-                    try {
-                        socket = device.createInsecureRfcommSocketToServiceRecord(Bluetooth.PAYMENT_REQUESTS_UUID);
-                        socket.connect();
+                    log.info("connected to {}", url);
 
-                        log.info("connected to {}", url);
+                    final CodedInputStream cis = CodedInputStream.newInstance(is);
+                    final CodedOutputStream cos = CodedOutputStream.newInstance(os);
 
-                        is = socket.getInputStream();
-                        os = socket.getOutputStream();
+                    cos.writeInt32NoTag(0);
+                    cos.writeStringNoTag(Bluetooth.getBluetoothQuery(url));
+                    cos.flush();
 
-                        final CodedInputStream cis = CodedInputStream.newInstance(is);
-                        final CodedOutputStream cos = CodedOutputStream.newInstance(os);
+                    final int responseCode = cis.readInt32();
 
-                        cos.writeInt32NoTag(0);
-                        cos.writeStringNoTag(Bluetooth.getBluetoothQuery(url));
-                        cos.flush();
+                    if (responseCode == 200) {
+                        new InputParser.BinaryInputParser(PaymentProtocol.MIMETYPE_PAYMENTREQUEST,
+                                cis.readBytes().toByteArray()) {
+                            @Override
+                            protected void handlePaymentIntent(final PaymentIntent paymentIntent) {
+                                log.info("received {} via bluetooth", paymentIntent);
 
-                        final int responseCode = cis.readInt32();
-
-                        if (responseCode == 200) {
-                            new InputParser.BinaryInputParser(PaymentProtocol.MIMETYPE_PAYMENTREQUEST,
-                                    cis.readBytes().toByteArray()) {
-                                @Override
-                                protected void handlePaymentIntent(final PaymentIntent paymentIntent) {
-                                    log.info("received {} via bluetooth", paymentIntent);
-
-                                    onPaymentIntent(paymentIntent);
-                                }
-
-                                @Override
-                                protected void error(final int messageResId, final Object... messageArgs) {
-                                    onFail(messageResId, messageArgs);
-                                }
-                            }.parse();
-                        } else {
-                            log.info("got bluetooth error {}", responseCode);
-
-                            onFail(R.string.error_bluetooth, responseCode);
-                        }
-                    } catch (final IOException x) {
-                        log.info("problem sending", x);
-
-                        onFail(R.string.error_io, x.getMessage());
-                    } finally {
-                        if (os != null) {
-                            try {
-                                os.close();
-                            } catch (final IOException x) {
-                                // swallow
+                                onPaymentIntent(paymentIntent);
                             }
-                        }
 
-                        if (is != null) {
-                            try {
-                                is.close();
-                            } catch (final IOException x) {
-                                // swallow
+                            @Override
+                            protected void error(final int messageResId, final Object... messageArgs) {
+                                onFail(messageResId, messageArgs);
                             }
-                        }
+                        }.parse();
+                    } else {
+                        log.info("got bluetooth error {}", responseCode);
 
-                        if (socket != null) {
-                            try {
-                                socket.close();
-                            } catch (final IOException x) {
-                                // swallow
-                            }
-                        }
+                        onFail(R.string.error_bluetooth, responseCode);
                     }
+                } catch (final IOException x) {
+                    log.info("problem sending", x);
+
+                    onFail(R.string.error_io, x.getMessage());
                 }
             });
         }
@@ -229,20 +193,10 @@ public abstract class RequestPaymentRequestTask {
     public abstract void requestPaymentRequest(String url);
 
     protected void onPaymentIntent(final PaymentIntent paymentIntent) {
-        callbackHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                resultCallback.onPaymentIntent(paymentIntent);
-            }
-        });
+        callbackHandler.post(() -> resultCallback.onPaymentIntent(paymentIntent));
     }
 
     protected void onFail(final int messageResId, final Object... messageArgs) {
-        callbackHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                resultCallback.onFail(messageResId, messageArgs);
-            }
-        });
+        callbackHandler.post(() -> resultCallback.onFail(messageResId, messageArgs));
     }
 }

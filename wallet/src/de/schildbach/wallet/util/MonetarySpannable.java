@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,43 +12,44 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.util;
-
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.regex.Matcher;
-
-import javax.annotation.Nullable;
-
-import org.bitcoinj.core.Monetary;
-import org.bitcoinj.utils.MonetaryFormat;
-
-import de.schildbach.wallet.Constants;
 
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
+import androidx.annotation.Nullable;
+import de.schildbach.wallet.Constants;
+import org.bitcoinj.core.Monetary;
+import org.bitcoinj.utils.MonetaryFormat;
+
+import java.util.regex.Matcher;
+
+import static androidx.core.util.Preconditions.checkArgument;
 
 /**
  * @author Andreas Schildbach
  */
 public final class MonetarySpannable extends SpannableString {
-    public MonetarySpannable(final MonetaryFormat format, final boolean signed, @Nullable final Monetary monetary) {
+    public MonetarySpannable(@Nullable final MonetaryFormat format, final boolean signed,
+            @Nullable final Monetary monetary) {
         super(format(format, signed, monetary));
     }
 
-    public MonetarySpannable(final MonetaryFormat format, @Nullable final Monetary monetary) {
+    public MonetarySpannable(@Nullable final MonetaryFormat format, @Nullable final Monetary monetary) {
         super(format(format, false, monetary));
     }
 
-    private static CharSequence format(final MonetaryFormat format, final boolean signed, final Monetary monetary) {
+    private static CharSequence format(@Nullable final MonetaryFormat format, final boolean signed,
+            final Monetary monetary) {
         if (monetary == null)
             return "";
+        if (format == null)
+            return monetary.toString();
 
         checkArgument(monetary.signum() >= 0 || signed);
 

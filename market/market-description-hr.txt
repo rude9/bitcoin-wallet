@@ -7,7 +7,6 @@
 • Prikaži Bitcoin iznos u BTC, mBTC i uBTC.
 • Pretvorba u ili iz nacionalnih valuta.
 • Slanje i primanje Bitcoina s NFC, QR kodom ili Bitcoin URL-om.
-• Adresar za često korištene Bitcoin adrese.
 • Kada si izvan mreže, možete još uvijek preko Bluetooth-a.
 • Sistemske obavjesti za primljene coin-ove.
 • Widgeti aplikacije za balansiranje Bitcoin-ova.
@@ -23,12 +22,6 @@ https://github.com/bitcoin-wallet/bitcoin-wallet
 
 Sve transakcije se provode preko Transifex-a:
 https://www.transifex.com/bitcoin-wallet/bitcoin-wallet/
-
-
-<b>IZJAVE</b>
-
-• Mnoge  mobilne aplikacije temelje svoj kod na Bitcoin Wallet. Primjer: blockchain.info i BTCX.
-• Preporučava BitPay.
 
 
 <i>Koristi na svoj vlastiti rizik.</i>

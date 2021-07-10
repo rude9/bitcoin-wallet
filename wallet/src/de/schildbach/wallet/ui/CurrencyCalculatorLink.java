@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,21 +12,18 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui;
 
-import javax.annotation.Nullable;
-
+import android.view.View;
+import androidx.annotation.Nullable;
+import de.schildbach.wallet.Constants;
+import de.schildbach.wallet.ui.CurrencyAmountView.Listener;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.utils.ExchangeRate;
 import org.bitcoinj.utils.Fiat;
-
-import de.schildbach.wallet.Constants;
-import de.schildbach.wallet.ui.CurrencyAmountView.Listener;
-
-import android.view.View;
 
 /**
  * @author Andreas Schildbach
@@ -143,9 +140,14 @@ public final class CurrencyCalculatorLink {
             if (exchangeDirection) {
                 final Coin btcAmount = (Coin) btcAmountView.getAmount();
                 if (btcAmount != null) {
-                    localAmountView.setAmount(null, false);
-                    localAmountView.setHint(exchangeRate.coinToFiat(btcAmount));
                     btcAmountView.setHint(null);
+                    localAmountView.setAmount(null, false);
+                    try {
+                        final Fiat localAmount = exchangeRate.coinToFiat(btcAmount);
+                        localAmountView.setHint(localAmount);
+                    } catch (final ArithmeticException x) {
+                        localAmountView.setHint(null);
+                    }
                 }
             } else {
                 final Fiat localAmount = (Fiat) localAmountView.getAmount();

@@ -1,4 +1,4 @@
-<b>Hab deine Bitcoins immer dabei, in deiner Hosentasche!</b> Du zahlst, indem du rasch einen QR-Code scannst. Als Händler empfängst du Zahlungen zuverlässig und sofort. Bitcoin Wallet ist die erste mobile Bitcoin app, und wohl auch die sicherste!
+<b>Hab deine Bitcoins immer dabei, in deiner Hosentasche!</b> Du zahlst, indem du rasch einen QR-Code scannst. Als Händler empfängst du Zahlungen zuverlässig und sofort. Bitcoin Wallet ist eine Referenz-Implementierung der "Simplified Payment Verification", wie sie im Bitcoin-Whitepaper beschrieben ist.
 
 
 <b>FEATURES</b>
@@ -7,11 +7,12 @@
 • Anzeige von Bitcoin-Werten in BTC, mBTC und µBTC.
 • Umrechnung von und zu den nationalen Währungen.
 • Senden und Empfangen von Bitcoin via NFC, QR-Codes oder Bitcoin URLs.
-• Adressbuch für regelmäßig genutzte Empfänger.
 • Wenn du offline bist, kannst du trotzdem über Bluetooth zahlen.
 • System-Benachrichtigung für den Empfang von Zahlungen.
 • Entleeren von Paper-Wallets (die z.B. für Cold-Storage genutzt wurden).
 • App-Widget zeigt Bitcoin-Guthaben an.
+• Sicherheit: Unterstützt SegWit und das neue Bech32-Format.
+• Privatsphäre: Unterstützt Tor mittels der separaten Orbot App.
 
 
 <b>MITWIRKEN</b>
@@ -26,10 +27,4 @@ Alle Übersetzungen werden auf Transifex organisiert:
 https://www.transifex.com/bitcoin-wallet/bitcoin-wallet/
 
 
-<b>EMPFEHLUNGEN</b>
-
-• Viele mobile Wallets basieren auf Bitcoin Wallet. Beispiele: blockchain.info und BTCX.
-• Von BitPay empfohlen.
-
-
-<i>Nutzung auf eigene Gefahr!</i>
+<i>Nutzung auf eigene Gefahr! Nutzung nur mit Beträgen in Hosentaschen-Größe.</i>

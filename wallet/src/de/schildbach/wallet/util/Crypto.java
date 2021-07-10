@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * Licensed under the MIT license (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,27 @@
 
 package de.schildbach.wallet.util;
 
+import com.google.common.io.BaseEncoding;
+import org.bouncycastle.crypto.BufferedBlockCipher;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.DataLengthException;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.PBEParametersGenerator;
+import org.bouncycastle.crypto.engines.AESFastEngine;
+import org.bouncycastle.crypto.generators.OpenSSLPBEParametersGenerator;
+import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.ParametersWithIV;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
-import org.spongycastle.crypto.BufferedBlockCipher;
-import org.spongycastle.crypto.CipherParameters;
-import org.spongycastle.crypto.DataLengthException;
-import org.spongycastle.crypto.InvalidCipherTextException;
-import org.spongycastle.crypto.PBEParametersGenerator;
-import org.spongycastle.crypto.engines.AESFastEngine;
-import org.spongycastle.crypto.generators.OpenSSLPBEParametersGenerator;
-import org.spongycastle.crypto.modes.CBCBlockCipher;
-import org.spongycastle.crypto.paddings.PaddedBufferedBlockCipher;
-import org.spongycastle.crypto.params.ParametersWithIV;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.BaseEncoding;
 
 /**
  * This class encrypts and decrypts a string in a manner that is compatible with OpenSSL.
@@ -84,7 +83,7 @@ public class Crypto {
     /**
      * OpenSSL salted prefix bytes - also used as magic number for encrypted key file.
      */
-    private static final byte[] OPENSSL_SALTED_BYTES = OPENSSL_SALTED_TEXT.getBytes(Charsets.UTF_8);
+    private static final byte[] OPENSSL_SALTED_BYTES = OPENSSL_SALTED_TEXT.getBytes(StandardCharsets.UTF_8);
 
     /**
      * Magic text that appears at the beginning of every OpenSSL encrypted file. Used in identifying encrypted
@@ -109,10 +108,7 @@ public class Crypto {
     private static CipherParameters getAESPasswordKey(final char[] password, final byte[] salt) {
         final PBEParametersGenerator generator = new OpenSSLPBEParametersGenerator();
         generator.init(PBEParametersGenerator.PKCS5PasswordToBytes(password), salt, NUMBER_OF_ITERATIONS);
-
-        final ParametersWithIV key = (ParametersWithIV) generator.generateDerivedParameters(KEY_LENGTH, IV_LENGTH);
-
-        return key;
+        return (ParametersWithIV) generator.generateDerivedParameters(KEY_LENGTH, IV_LENGTH);
     }
 
     /**
@@ -126,7 +122,7 @@ public class Crypto {
      * @throws IOException
      */
     public static String encrypt(final String plainText, final char[] password) throws IOException {
-        final byte[] plainTextAsBytes = plainText.getBytes(Charsets.UTF_8);
+        final byte[] plainTextAsBytes = plainText.getBytes(StandardCharsets.UTF_8);
 
         return encrypt(plainTextAsBytes, password);
     }
@@ -153,7 +149,7 @@ public class Crypto {
     /**
      * Password based encryption using AES - CBC 256 bits.
      * 
-     * @param plainBytes
+     * @param plainTextAsBytes
      *            The bytes to encrypt
      * @param password
      *            The password to use for encryption
@@ -177,9 +173,7 @@ public class Crypto {
 
             // The result bytes are the SALT_LENGTH bytes followed by the encrypted bytes.
             return concat(salt, Arrays.copyOf(encryptedBytes, processLen + doFinalLen));
-        } catch (final InvalidCipherTextException x) {
-            throw new IOException("Could not encrypt bytes", x);
-        } catch (final DataLengthException x) {
+        } catch (final InvalidCipherTextException | DataLengthException x) {
             throw new IOException("Could not encrypt bytes", x);
         }
     }
@@ -197,7 +191,7 @@ public class Crypto {
     public static String decrypt(final String textToDecode, final char[] password) throws IOException {
         final byte[] decryptedBytes = decryptBytes(textToDecode, password);
 
-        return new String(decryptedBytes, Charsets.UTF_8).trim();
+        return new String(decryptedBytes, StandardCharsets.UTF_8).trim();
     }
 
     /**
@@ -211,6 +205,9 @@ public class Crypto {
      * @throws IOException
      */
     public static byte[] decryptBytes(final String textToDecode, final char[] password) throws IOException {
+        if (textToDecode.isEmpty())
+            throw new IOException("empty ciphertext");
+
         final byte[] decodeTextAsBytes;
         try {
             decodeTextAsBytes = BASE64_DECRYPT.decode(textToDecode);
@@ -225,9 +222,7 @@ public class Crypto {
         System.arraycopy(decodeTextAsBytes, OPENSSL_SALTED_BYTES.length, cipherBytes, 0,
                 decodeTextAsBytes.length - OPENSSL_SALTED_BYTES.length);
 
-        final byte[] decryptedBytes = decryptRaw(cipherBytes, password);
-
-        return decryptedBytes;
+        return decryptRaw(cipherBytes, password);
     }
 
     /**
@@ -235,7 +230,7 @@ public class Crypto {
      * 
      * @param bytesToDecode
      *            The bytes to decrypt
-     * @param passwordbThe
+     * @param password
      *            password to use for decryption
      * @return The decrypted bytes
      * @throws IOException
@@ -261,9 +256,7 @@ public class Crypto {
             final int doFinalLen = cipher.doFinal(decryptedBytes, processLen);
 
             return Arrays.copyOf(decryptedBytes, processLen + doFinalLen);
-        } catch (final InvalidCipherTextException x) {
-            throw new IOException("Could not decrypt bytes", x);
-        } catch (final DataLengthException x) {
+        } catch (final InvalidCipherTextException | DataLengthException x) {
             throw new IOException("Could not decrypt bytes", x);
         }
     }
@@ -284,24 +277,15 @@ public class Crypto {
 
         @Override
         public boolean accept(final File file) {
-            Reader in = null;
-            try {
-                in = new InputStreamReader(new FileInputStream(file), Charsets.UTF_8);
+            try (final Reader in = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
                 if (in.read(buf) == -1)
                     return false;
                 final String str = new String(buf);
-                if (!str.toString().equals(OPENSSL_MAGIC_TEXT))
+                if (!str.equals(OPENSSL_MAGIC_TEXT))
                     return false;
                 return true;
             } catch (final IOException x) {
                 return false;
-            } finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (final IOException x2) {
-                    }
-                }
             }
         }
     };

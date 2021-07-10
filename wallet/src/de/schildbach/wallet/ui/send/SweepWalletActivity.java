@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,32 +12,30 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.ui.send;
 
-import org.bitcoinj.core.VersionedChecksummedBytes;
-
-import de.schildbach.wallet.ui.AbstractBindServiceActivity;
-import de.schildbach.wallet_test.R;
-
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
+import de.schildbach.wallet.R;
+import de.schildbach.wallet.service.BlockchainService;
+import de.schildbach.wallet.ui.AbstractWalletActivity;
+import org.bitcoinj.core.PrefixedChecksummedBytes;
 
 /**
  * @author Andreas Schildbach
  */
-public final class SweepWalletActivity extends AbstractBindServiceActivity {
+public final class SweepWalletActivity extends AbstractWalletActivity {
     public static final String INTENT_EXTRA_KEY = "sweep_key";
 
     public static void start(final Context context) {
         context.startActivity(new Intent(context, SweepWalletActivity.class));
     }
 
-    public static void start(final Context context, final VersionedChecksummedBytes key) {
+    public static void start(final Context context, final PrefixedChecksummedBytes key) {
         final Intent intent = new Intent(context, SweepWalletActivity.class);
         intent.putExtra(INTENT_EXTRA_KEY, key);
         context.startActivity(intent);
@@ -49,17 +47,6 @@ public final class SweepWalletActivity extends AbstractBindServiceActivity {
 
         setContentView(R.layout.sweep_wallet_content);
 
-        getWalletApplication().startBlockchainService(false);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(final MenuItem item) {
-        switch (item.getItemId()) {
-        case android.R.id.home:
-            finish();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        BlockchainService.start(this, false);
     }
 }

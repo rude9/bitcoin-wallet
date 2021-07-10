@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,25 +12,11 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.offline;
 
-import java.io.IOException;
-
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.VerificationException;
-import org.bitcoinj.wallet.Wallet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import de.schildbach.wallet.WalletApplication;
-import de.schildbach.wallet.util.CrashReporter;
-import de.schildbach.wallet.util.Toast;
-import de.schildbach.wallet_test.R;
-
-import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -41,13 +27,31 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.text.format.DateUtils;
+import androidx.core.app.NotificationCompat;
+import androidx.lifecycle.LifecycleService;
+import de.schildbach.wallet.Constants;
+import de.schildbach.wallet.R;
+import de.schildbach.wallet.WalletApplication;
+import de.schildbach.wallet.data.BlockchainServiceLiveData;
+import de.schildbach.wallet.data.WalletLiveData;
+import de.schildbach.wallet.util.CrashReporter;
+import de.schildbach.wallet.util.Toast;
+import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.VerificationException;
+import org.bitcoinj.wallet.Wallet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+
+import static androidx.core.util.Preconditions.checkNotNull;
 
 /**
  * @author Andreas Schildbach
  */
-public final class AcceptBluetoothService extends Service {
+public final class AcceptBluetoothService extends LifecycleService {
     private WalletApplication application;
-    private Wallet wallet;
+    private WalletLiveData wallet;
     private WakeLock wakeLock;
     private AcceptBluetoothThread classicThread;
     private AcceptBluetoothThread paymentProtocolThread;
@@ -62,11 +66,14 @@ public final class AcceptBluetoothService extends Service {
 
     @Override
     public IBinder onBind(final Intent intent) {
+        super.onBind(intent);
         return null;
     }
 
     @Override
     public int onStartCommand(final Intent intent, final int flags, final int startId) {
+        super.onStartCommand(intent, flags, startId);
+
         handler.removeCallbacks(timeoutRunnable);
         handler.postDelayed(timeoutRunnable, TIMEOUT_MS);
 
@@ -79,15 +86,22 @@ public final class AcceptBluetoothService extends Service {
         log.debug(".onCreate()");
 
         super.onCreate();
-
         this.application = (WalletApplication) getApplication();
-        this.wallet = application.getWallet();
-
-        final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
+        final BluetoothAdapter bluetoothAdapter = checkNotNull(BluetoothAdapter.getDefaultAdapter());
         final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
         wakeLock.acquire();
+
+        final NotificationCompat.Builder notification = new NotificationCompat.Builder(this,
+                Constants.NOTIFICATION_CHANNEL_ID_ONGOING);
+        notification.setColor(getColor(R.color.fg_network_significant));
+        notification.setSmallIcon(R.drawable.stat_notify_bluetooth_24dp);
+        notification.setContentTitle(getString(R.string.notification_bluetooth_service_listening));
+        notification.setWhen(System.currentTimeMillis());
+        notification.setOngoing(true);
+        notification.setPriority(NotificationCompat.PRIORITY_LOW);
+        startForeground(Constants.NOTIFICATION_ID_BLUETOOTH, notification.build());
 
         registerReceiver(bluetoothStateChangeReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 
@@ -104,35 +118,36 @@ public final class AcceptBluetoothService extends Service {
                     return AcceptBluetoothService.this.handleTx(tx);
                 }
             };
-
-            classicThread.start();
-            paymentProtocolThread.start();
         } catch (final IOException x) {
             new Toast(this).longToast(R.string.error_bluetooth, x.getMessage());
+            log.warn("problem with listening, stopping service", x);
             CrashReporter.saveBackgroundTrace(x, application.packageInfo());
+            stopSelf();
         }
+
+        wallet = new WalletLiveData(application);
+        wallet.observe(this, wallet -> {
+            classicThread.start();
+            paymentProtocolThread.start();
+        });
     }
 
     private boolean handleTx(final Transaction tx) {
-        log.info("tx " + tx.getHashAsString() + " arrived via blueooth");
+        log.info("tx {} arrived via blueooth", tx.getTxId());
 
+        final Wallet wallet = this.wallet.getValue();
         try {
             if (wallet.isTransactionRelevant(tx)) {
                 wallet.receivePending(tx, null);
-
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        application.broadcastTransaction(tx);
-                    }
-                });
+                new BlockchainServiceLiveData(this).observe(this,
+                        blockchainService -> blockchainService.broadcastTransaction(tx));
             } else {
-                log.info("tx " + tx.getHashAsString() + " irrelevant");
+                log.info("tx {} irrelevant", tx.getTxId());
             }
 
             return true;
         } catch (final VerificationException x) {
-            log.info("cannot verify tx " + tx.getHashAsString() + " received via bluetooth", x);
+            log.info("cannot verify tx " + tx.getTxId() + " received via bluetooth", x);
         }
 
         return false;
@@ -169,12 +184,9 @@ public final class AcceptBluetoothService extends Service {
         }
     };
 
-    private final Runnable timeoutRunnable = new Runnable() {
-        @Override
-        public void run() {
-            log.info("timeout expired, stopping service");
+    private final Runnable timeoutRunnable = () -> {
+        log.info("timeout expired, stopping service");
 
-            stopSelf();
-        }
+        stopSelf();
     };
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,25 +12,25 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package de.schildbach.wallet.util;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.common.io.CharStreams;
+import org.bitcoinj.wallet.WalletProtobufSerializer;
+import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
-import org.bitcoinj.wallet.WalletProtobufSerializer;
-import org.junit.Test;
-
-import com.google.common.base.Charsets;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Andreas Schildbach
@@ -101,9 +101,9 @@ public class CryptoTest {
 
     private String readBackupFromResource(final String filename) throws IOException {
         final BufferedReader reader = new BufferedReader(
-                new InputStreamReader(getClass().getResourceAsStream(filename), Charsets.UTF_8));
+                new InputStreamReader(getClass().getResourceAsStream(filename), StandardCharsets.UTF_8));
         final StringBuilder backup = new StringBuilder();
-        Io.copy(reader, backup);
+        CharStreams.copy(reader, backup);
         reader.close();
 
         return backup.toString();
